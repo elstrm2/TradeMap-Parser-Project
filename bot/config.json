@@ -1,0 +1,19 @@
+{
+  "username": "",
+  "password": "",
+  "product_codes": [
+    "3102"
+  ],
+  "countries": [
+    "Canada"
+  ],
+  "action_delay": 0.5,
+  "page_timeout": 5,
+  "retry_count": 3,
+  "download_timeout": 30,
+  "captcha_timeout": 60,
+  "freeze_header": false,
+  "parse_all_pages": false,
+  "quantity_unit": "Kilograms",
+  "parse_depth": "level4"
+}

@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Управление TradeMap ботом</title>
+    <style>
+      :root {
+        --bg-color: #f5f6fa;
+        --text-color: #2c3e50;
+        --card-bg: white;
+        --border-color: #e0e0e0;
+        --input-bg: white;
+        --slider-bg: #f8f9fa;
+      }
+
+      [data-theme="dark"] {
+        --bg-color: #1a1a1a;
+        --text-color: #e0e0e0;
+        --card-bg: #2d2d2d;
+        --border-color: #404040;
+        --input-bg: #333333;
+        --slider-bg: #404040;
+        --secondary-text: #a0a0a0;
+        --clear-container-bg: #2d2d2d;
+      }
+
+      body {
+        font-family: "Arial", sans-serif;
+        margin: 0;
+        padding: 15px;
+        background: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s ease, color 0.3s ease;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+      }
+
+      .config-section,
+      .control-section {
+        width: 100%;
+        max-width: 1000px;
+        background: var(--card-bg);
+        padding: 15px 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-sizing: border-box;
+        position: relative;
+        transition: background-color 0.3s ease;
+      }
+
+      .config-section {
+        margin-bottom: 15px;
+      }
+
+      .control-section {
+        display: flex;
+        gap: 20px;
+      }
+
+      h1 {
+        margin: 0;
+        flex: 1;
+      }
+
+      h1,
+      h2 {
+        color: var(--text-color);
+        margin-bottom: 20px;
+      }
+
+      .grid-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      input,
+      select {
+        padding: 10px;
+        background: var(--input-bg);
+        color: var(--text-color);
+        border-color: var(--border-color);
+        border: 2px solid #e0e0e0;
+        border-radius: 6px;
+        font-size: 16px;
+        transition: border-color 0.3s ease;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: #3498db;
+        outline: none;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 15px;
+        margin: 15px 0 20px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 15px;
+        transition: all 0.3s ease;
+        min-width: 120px;
+      }
+
+      .start-btn {
+        background: #2980b9;
+        color: white;
+      }
+
+      .stop-btn {
+        background: #e74c3c;
+        color: white;
+      }
+
+      button:hover {
+        opacity: 0.9;
+        transform: translateY(-2px);
+      }
+
+      .error-message {
+        color: #e74c3c;
+        font-size: 12px;
+        margin-top: 4px;
+        display: none;
+      }
+
+      input:invalid,
+      select:invalid {
+        border-color: #e74c3c;
+      }
+
+      .form-group.error .error-message {
+        display: block;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(120%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideOut {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(120%);
+          opacity: 0;
+        }
+      }
+
+      @keyframes slideInRight {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideOutRight {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(110%);
+          opacity: 0;
+        }
+      }
+
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 16px 40px 16px 20px;
+        background: #e74c3c;
+        color: white;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 9999;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        max-width: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        margin-bottom: 10px;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+
+      .notification.show {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      .notification.hide {
+        opacity: 0;
+        transform: translateX(110%);
+      }
+
+      .notification .progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 0 0 6px 6px;
+        overflow: hidden;
+      }
+
+      .notification .progress-bar {
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        width: 100%;
+        transform-origin: left;
+        animation: progress 3s linear forwards;
+      }
+
+      .notification .close-btn {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+
+      .notification .close-btn:hover {
+        opacity: 1;
+      }
+
+      .notification .close-btn::before,
+      .notification .close-btn::after {
+        content: "";
+        position: absolute;
+        width: 2px;
+        height: 16px;
+        background: white;
+        left: 50%;
+        top: 50%;
+      }
+
+      .notification .close-btn::before {
+        transform: translate(-50%, -50%) rotate(45deg);
+      }
+
+      .notification .close-btn::after {
+        transform: translate(-50%, -50%) rotate(-45deg);
+      }
+
+      @keyframes progress {
+        from {
+          transform: scaleX(1);
+        }
+        to {
+          transform: scaleX(0);
+        }
+      }
+
+      .form-group.error input,
+      input.invalid {
+        border-color: #e74c3c !important;
+      }
+
+      .form-group.error .error-message {
+        display: block;
+      }
+
+      .notification.success {
+        background: #2ecc71;
+      }
+
+      .notification.error {
+        background: #e74c3c;
+      }
+
+      .notification.warning {
+        background: #f39c12;
+      }
+
+      #notifications-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+      }
+
+      #last-error {
+        max-width: 250px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      @media (min-height: 800px) {
+        body {
+          padding: 20px;
+        }
+
+        .config-section,
+        .control-section {
+          padding: 20px 30px;
+        }
+
+        .grid-form {
+          gap: 20px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding: 10px;
+          overflow-y: auto;
+        }
+
+        .config-section,
+        .control-section {
+          padding: 15px;
+        }
+
+        .control-section {
+          flex-direction: column;
+        }
+
+        .status-container {
+          margin-top: 15px;
+        }
+
+        .grid-form {
+          grid-template-columns: 1fr;
+        }
+
+        .status-content {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .status-details {
+          width: 100%;
+        }
+
+        #last-error {
+          max-width: 100%;
+        }
+      }
+
+      @media (max-width: 480px) {
+        body {
+          padding: 10px;
+        }
+
+        .grid-form {
+          grid-template-columns: 1fr;
+        }
+
+        .config-section,
+        .control-section {
+          padding: 10px;
+        }
+      }
+
+      @media (max-width: 320px) {
+        body {
+          padding: 5px;
+        }
+
+        .config-section,
+        .control-section {
+          padding: 8px;
+        }
+      }
+
+      .status-section {
+        width: 100%;
+        max-width: 1000px;
+        margin-top: 20px;
+      }
+
+      .control-panel {
+        flex: 0 0 auto;
+      }
+
+      .status-panel {
+        flex: 1;
+      }
+
+      .status-container {
+        margin-top: 0;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .status-content {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      #bot-status {
+        font-weight: 600;
+        margin-bottom: 5px;
+      }
+
+      .status-timestamp {
+        font-size: 0.8em;
+        color: #666;
+      }
+
+      .status-details {
+        font-size: 0.85em;
+        color: var(--secondary-text);
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .status-details div {
+        margin: 3px 0;
+      }
+
+      .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+        border-radius: 8px;
+        background: var(--slider-bg);
+      }
+
+      .status-led {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #95a5a6;
+        box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .status-text {
+        font-weight: 600;
+        color: var(--text-color);
+      }
+
+      .status-running .status-led {
+        background: #2ecc71;
+        animation: pulse 1.5s infinite;
+      }
+      .status-starting .status-led {
+        background: #f1c40f;
+        animation: pulse 1.5s infinite;
+      }
+      .status-stopping .status-led {
+        background: #e67e22;
+        animation: pulse 1.5s infinite;
+      }
+      .status-stopped .status-led {
+        background: #95a5a6;
+      }
+      .status-error .status-led {
+        background: #e74c3c;
+        animation: pulse-error 0.8s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.6;
+        }
+      }
+
+      @keyframes pulse-error {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.2);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+        filter: grayscale(0.3);
+      }
+
+      button.disabled {
+        pointer-events: none;
+      }
+
+      .start-btn:disabled {
+        background: #2472a4 !important;
+      }
+
+      .stop-btn:disabled {
+        background: #c0392b !important;
+      }
+
+      .clear-error-container {
+        margin-top: 15px;
+        padding: 10px;
+        background: var(--clear-container-bg);
+        border-radius: 8px;
+        width: 100%;
+      }
+
+      [data-theme="dark"] .clear-error-slider {
+        background: var(--input-bg);
+        border-color: var(--border-color);
+      }
+
+      [data-theme="dark"] .moon-icon {
+        stroke: #2c3e50;
+        opacity: 1;
+      }
+
+      [data-theme="dark"] .slider-icon {
+        stroke: #2c3e50;
+      }
+
+      [data-theme="dark"] .clear-text {
+        color: var(--secondary-text);
+      }
+
+      [data-theme="dark"] .status-timestamp {
+        color: var(--secondary-text);
+      }
+
+      .clear-error-slider {
+        position: relative;
+        height: 50px;
+        background: #fff;
+        border-radius: 6px;
+        border: 1px solid #eee;
+        overflow: hidden;
+        cursor: grab;
+        transition: all 0.3s;
+      }
+
+      .slider-track {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 0;
+        background: #2ecc71;
+        transition: width 0.3s;
+      }
+
+      .slider-thumb {
+        position: absolute;
+        left: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 40px;
+        height: 40px;
+        background: #fff;
+        border: 2px solid #3498db;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #3498db;
+        z-index: 2;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .clear-text {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        color: #666;
+        font-size: 14px;
+        white-space: nowrap;
+        z-index: 1;
+        transition: opacity 0.3s;
+        pointer-events: none;
+      }
+
+      .clear-error-slider.active .slider-track {
+        background: #27ae60;
+      }
+
+      .clear-error-slider.active .slider-thumb {
+        border-color: #27ae60;
+        color: #27ae60;
+      }
+
+      .clear-error-slider.success .slider-track {
+        width: 100% !important;
+        background: #2ecc71 !important;
+      }
+
+      .clear-error-slider.success .slider-thumb {
+        left: calc(100% - 35px) !important;
+        border-color: #2ecc71 !important;
+        color: #2ecc71 !important;
+      }
+
+      .header-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 20px;
+        width: 100%;
+      }
+
+      .theme-switch-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        align-self: flex-start;
+        margin-top: 0.2rem;
+      }
+
+      #theme-toggle:disabled {
+        opacity: 1 !important;
+        cursor: pointer !important;
+      }
+
+      input:disabled,
+      select:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background-color: var(--slider-bg);
+      }
+
+      .theme-switch {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+
+      .theme-switch {
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+        position: relative;
+      }
+
+      .theme-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 34px;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+      }
+
+      input:checked + .slider {
+        background-color: #2196f3;
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(26px);
+      }
+
+      .slider-icon {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 16px;
+        height: 16px;
+        transition: opacity 0.3s ease;
+      }
+
+      .sun-icon {
+        left: 8px;
+        opacity: 1;
+      }
+
+      .moon-icon {
+        right: 8px;
+        opacity: 0;
+      }
+
+      input:checked + .slider .sun-icon {
+        opacity: 0;
+      }
+
+      input:checked + .slider .moon-icon {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="config-section">
+      <div class="header-container">
+        <h1>Панель управления TradeMap ботом</h1>
+        <div class="theme-switch-wrapper">
+          <label class="theme-switch">
+            <input type="checkbox" id="theme-toggle" />
+            <span class="slider">
+              <svg class="slider-icon sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+              <svg class="slider-icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            </span>
+          </label>
+        </div>
+      </div>
+      <h2>Конфигурация</h2>
+      <form id="configForm" class="grid-form">
+        <div class="form-group">
+          <label>Логин (email):</label>
+          <input
+            type="email"
+            id="username"
+            required
+            pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+            title="Введите корректный email адрес"
+          />
+          <span class="error-message">Введите корректный email адрес</span>
+        </div>
+
+        <div class="form-group">
+          <label>Пароль:</label>
+          <input type="password" id="password" required minlength="6" title="Минимум 6 символов" />
+          <span class="error-message">Пароль должен содержать минимум 6 символов</span>
+        </div>
+
+        <div class="form-group">
+          <label>Коды товаров (через запятую):</label>
+          <input type="text" id="productCodes" required pattern="^[\d\s,]+$" title="Только цифры, разделенные запятыми" />
+          <span class="error-message">Введите корректные коды товаров (только цифры, разделенные запятыми)</span>
+        </div>
+
+        <div class="form-group">
+          <label>Страны (через запятую):</label>
+          <input type="text" id="countries" required pattern="^[A-Za-z\s,]+$" title="Только буквы, разделенные запятыми" />
+          <span class="error-message">Введите корректные названия стран (только буквы, разделенные запятыми)</span>
+        </div>
+
+        <div class="form-group">
+          <label>Задержка действий (сек):</label>
+          <input type="number" id="actionDelay" step="0.1" required min="0.1" max="10" title="От 0.1 до 10 секунд" />
+          <span class="error-message">Значение должно быть от 0.1 до 10 секунд</span>
+        </div>
+
+        <div class="form-group">
+          <label>Таймаут страницы (сек):</label>
+          <input type="number" id="pageTimeout" step="1" required min="1" max="60" title="От 1 до 60 секунд" />
+          <span class="error-message">Значение должно быть целым числом от 1 до 60 секунд</span>
+        </div>
+
+        <div class="form-group">
+          <label>Количество попыток:</label>
+          <input type="number" id="retryCount" step="1" required min="1" max="10" title="От 1 до 10 попыток" />
+          <span class="error-message">Значение должно быть целым числом от 1 до 10 попыток</span>
+        </div>
+
+        <div class="form-group">
+          <label>Таймаут загрузки (сек):</label>
+          <input type="number" id="downloadTimeout" step="1" required min="5" max="300" title="От 5 до 300 секунд" />
+          <span class="error-message">Значение должно быть целым числом от 5 до 300 секунд</span>
+        </div>
+
+        <div class="form-group">
+          <label>Таймаут капчи (сек):</label>
+          <input type="number" id="captchaTimeout" step="1" required min="30" max="300" title="От 30 до 300 секунд" />
+          <span class="error-message">Значение должно быть целым числом от 30 до 300 секунд</span>
+        </div>
+
+        <div class="form-group">
+          <label for="freezeHeader">Закрепить заголовок:</label>
+          <select id="freezeHeader" required>
+            <option value="true">Да</option>
+            <option value="false">Нет</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="parseAllPages">Парсинг страниц:</label>
+          <select id="parseAllPages" required>
+            <option value="false">Только последняя</option>
+            <option value="true">Все страницы</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="quantityUnit">Единица измерения:</label>
+          <select id="quantityUnit" required>
+            <option value="Kilograms">Килограммы</option>
+            <option value="Tons">Тонны</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="parseDepth">Глубина парсинга:</label>
+          <select id="parseDepth" required>
+            <option value="level1">Уровень 1 (2 цифры)</option>
+            <option value="level2">Уровень 2 (4 цифры)</option>
+            <option value="level3">Уровень 3 (6 цифр)</option>
+            <option value="level4">Уровень 4 (8+ цифр)</option>
+          </select>
+        </div>
+      </form>
+    </div>
+
+    <div class="control-section">
+      <div class="control-panel">
+        <h2>Управление</h2>
+        <div class="button-group">
+          <button id="start-btn" class="start-btn" onclick="startBot()">Запустить</button>
+          <button id="stop-btn" class="stop-btn" onclick="stopBot()">Остановить</button>
+        </div>
+      </div>
+
+      <div class="status-panel">
+        <div class="status-container">
+          <div class="status-content">
+            <div id="bot-status" class="status-indicator">
+              <span class="status-led"></span>
+              <span class="status-text">Статус: Загрузка...</span>
+            </div>
+            <div id="status-details" class="status-details">
+              <div>Обновлено: <span id="status-timestamp">-</span></div>
+              <div>Ошибка: <span id="last-error">нет</span></div>
+            </div>
+          </div>
+
+          <div class="clear-error-container">
+            <div class="clear-error-slider">
+              <div class="slider-track"></div>
+              <div class="slider-thumb">→</div>
+              <span class="clear-text">Потяните чтобы очистить ошибки</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      const DEFAULTS = {
+        username: "",
+        password: "",
+        product_codes: [],
+        countries: [],
+        action_delay: 0.5,
+        page_timeout: 5,
+        retry_count: 3,
+        download_timeout: 30,
+        captcha_timeout: 60,
+        freeze_header: true,
+        parse_all_pages: false,
+        quantity_unit: "Kilograms",
+        parse_depth: "level1",
+      };
+
+      const FIELD_NAMES = {
+        username: "Email",
+        password: "Пароль",
+        productCodes: "Коды товаров",
+        countries: "Страны",
+        actionDelay: "Задержка действий",
+        pageTimeout: "Таймаут страницы",
+        retryCount: "Количество попыток",
+        downloadTimeout: "Таймаут загрузки",
+        captchaTimeout: "Таймаут капчи",
+        freezeHeader: "Закрепление заголовка",
+        parseAllPages: "Парсинг страниц",
+        quantityUnit: "Единица измерения",
+        parseDepth: "Глубина парсинга",
+      };
+
+      const VALIDATION_RULES = {
+        username: {
+          pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+          test: (value) => {
+            const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            return regex.test(value);
+          },
+          message: "Введите корректный email адрес",
+        },
+        password: {
+          minLength: 6,
+          message: "Пароль должен содержать минимум 6 символов",
+        },
+        productCodes: {
+          pattern: /^[\d\s,]+$/,
+          message: "Только цифры, разделенные запятыми",
+        },
+        countries: {
+          pattern: /^[A-Za-z\s,]+$/,
+          message: "Только буквы, разделенные запятыми",
+        },
+        actionDelay: {
+          min: 0.1,
+          max: 10,
+          float: true,
+          message: "Значение должно быть от 0.1 до 10 секунд",
+        },
+        pageTimeout: {
+          min: 1,
+          max: 60,
+          integer: true,
+          message: "Значение должно быть целым числом от 1 до 60 секунд",
+        },
+        retryCount: {
+          min: 1,
+          max: 10,
+          integer: true,
+          message: "Значение должно быть целым числом от 1 до 10 попыток",
+        },
+        downloadTimeout: {
+          min: 5,
+          max: 300,
+          integer: true,
+          message: "Значение должно быть целым числом от 5 до 300 секунд",
+        },
+        captchaTimeout: {
+          min: 30,
+          max: 300,
+          integer: true,
+          message: "Значение должно быть целым числом от 30 до 300 секунд",
+        },
+      };
+
+      let captchaCheckInterval = null;
+      let statusPollInterval = null;
+
+      async function startStatusPolling(immediate = false) {
+        if (statusPollInterval) clearInterval(statusPollInterval);
+
+        if (immediate) {
+          await fetchStatus();
+        }
+
+        statusPollInterval = setInterval(fetchStatus, 1500);
+      }
+
+      async function fetchStatus() {
+        try {
+          const response = await fetch("/api/bot/status");
+          const status = await response.json();
+          updateStatusDisplay(status);
+          updateBotControls(status.state === "running", status.state);
+
+          if (status.state !== "running") {
+            stopCaptchaCheck();
+          }
+        } catch (error) {
+          console.error("Status poll error:", error);
+          updateBotControls(true, "error");
+        }
+      }
+
+      function updateStatusDisplay(status) {
+        const statusElement = document.getElementById("bot-status");
+        const statusText = statusElement.querySelector(".status-text");
+        const statusLed = statusElement.querySelector(".status-led");
+        const timestampElement = document.getElementById("status-timestamp");
+        const lastErrorElement = document.getElementById("last-error");
+
+        statusElement.className = `status-indicator status-${status.state}`;
+
+        statusText.textContent = `Статус: ${getStatusLabel(status.state)}`;
+
+        timestampElement.textContent = status.timestamp || "-";
+
+        if (status.error) {
+          lastErrorElement.textContent = status.error;
+          lastErrorElement.style.color = "#e74c3c";
+        } else {
+          lastErrorElement.textContent = "нет";
+          lastErrorElement.style.color = "inherit";
+        }
+      }
+
+      function getStatusLabel(state) {
+        const labels = {
+          running: "Выполняется",
+          starting: "Запуск...",
+          stopping: "Остановка...",
+          stopped: "Остановлен",
+          error: "Ошибка",
+        };
+        return labels[state] || state;
+      }
+
+      function updateBotControls(isRunning, botStatus) {
+        const startBtn = document.getElementById("start-btn");
+        const stopBtn = document.getElementById("stop-btn");
+
+        const isFullyStopped = botStatus === "stopped";
+        const isError = botStatus === "error";
+
+        if (startBtn) {
+          startBtn.disabled = isRunning || botStatus === "starting" || botStatus === "stopping";
+          startBtn.classList.toggle("disabled", isRunning || botStatus === "starting" || botStatus === "stopping");
+        }
+
+        if (stopBtn) {
+          stopBtn.disabled = !isRunning || botStatus === "stopping";
+          stopBtn.classList.toggle("disabled", !isRunning || botStatus === "stopping");
+        }
+
+        const configInputs = document.querySelectorAll("#configForm input:not(#theme-toggle), #configForm select");
+        configInputs.forEach((input) => {
+          input.disabled = !isFullyStopped;
+        });
+      }
+
+      function updateFieldUI(input, formGroup, isValid) {
+        requestAnimationFrame(() => {
+          if (isValid) {
+            formGroup.classList.remove("error");
+            input.classList.remove("invalid");
+          } else {
+            formGroup.classList.add("error");
+            input.classList.add("invalid");
+          }
+        });
+      }
+
+      function validateField(input, showError = true) {
+        if (input.type === "checkbox") {
+          return true;
+        }
+
+        const formGroup = input.closest(".form-group");
+        if (!formGroup) {
+          return true;
+        }
+
+        let isValid = true;
+        let value = input.value.trim();
+
+        if (input.hasAttribute("required") && !value) {
+          isValid = false;
+        } else if (value) {
+          const rules = VALIDATION_RULES[input.id];
+          if (rules) {
+            if (rules.test) {
+              isValid = rules.test(value);
+            } else if (rules.pattern) {
+              isValid = rules.pattern.test(value);
+            }
+
+            if (rules.minLength && value.length < rules.minLength) {
+              isValid = false;
+            }
+
+            if ((rules.min !== undefined || rules.max !== undefined) && value) {
+              const numValue = rules.float ? parseFloat(value) : parseInt(value);
+              if (
+                isNaN(numValue) ||
+                (rules.integer && !Number.isInteger(parseFloat(value))) ||
+                (rules.min !== undefined && numValue < rules.min) ||
+                (rules.max !== undefined && numValue > rules.max)
+              ) {
+                isValid = false;
+              }
+            }
+          }
+        }
+
+        if (showError) {
+          updateFieldUI(input, formGroup, isValid);
+          if (!isValid) {
+            const fieldName = FIELD_NAMES[input.id] || input.id;
+            console.warn(`Validation failed for ${fieldName}:`, {
+              value,
+              rules: VALIDATION_RULES[input.id],
+              reason: "Pattern mismatch",
+            });
+          }
+        }
+
+        return isValid;
+      }
+
+      async function loadAndValidateConfig() {
+        try {
+          const response = await fetch("/api/config");
+          const data = await response.json();
+          let config = data.status === "success" ? { ...data.config } : { ...DEFAULTS };
+          let needsSave = false;
+
+          if (!["Kilograms", "Tons"].includes(config.quantity_unit)) {
+            console.warn("Invalid quantity_unit, resetting to default:", config.quantity_unit);
+            config.quantity_unit = DEFAULTS.quantity_unit;
+            needsSave = true;
+          }
+
+          if (!["level1", "level2", "level3", "level4"].includes(config.parse_depth)) {
+            console.warn("Invalid parse_depth, resetting to default:", config.parse_depth);
+            config.parse_depth = DEFAULTS.parse_depth;
+            needsSave = true;
+          }
+
+          if (isNaN(parseFloat(config.action_delay)) || config.action_delay <= VALIDATION_RULES.actionDelay.min) {
+            console.warn("Invalid action_delay, resetting to default:", config.action_delay);
+            config.action_delay = DEFAULTS.action_delay;
+            needsSave = true;
+          }
+
+          if (isNaN(parseInt(config.page_timeout)) || config.page_timeout <= VALIDATION_RULES.pageTimeout.min) {
+            console.warn("Invalid page_timeout, resetting to default:", config.page_timeout);
+            config.page_timeout = DEFAULTS.page_timeout;
+            needsSave = true;
+          }
+
+          if (isNaN(parseInt(config.retry_count)) || config.retry_count <= VALIDATION_RULES.retryCount.min) {
+            console.warn("Invalid retry_count, resetting to default:", config.retry_count);
+            config.retry_count = DEFAULTS.retry_count;
+            needsSave = true;
+          }
+
+          if (isNaN(parseInt(config.download_timeout)) || config.download_timeout <= VALIDATION_RULES.downloadTimeout.min) {
+            console.warn("Invalid download_timeout, resetting to default:", config.download_timeout);
+            config.download_timeout = DEFAULTS.download_timeout;
+            needsSave = true;
+          }
+
+          if (isNaN(parseInt(config.captcha_timeout)) || config.captcha_timeout <= VALIDATION_RULES.captchaTimeout.min) {
+            console.warn("Invalid captcha_timeout, resetting to default:", config.captcha_timeout);
+            config.captcha_timeout = DEFAULTS.captcha_timeout;
+            needsSave = true;
+          }
+
+          if (!Array.isArray(config.product_codes) || !config.product_codes.every((code) => typeof code === "string")) {
+            console.warn("Invalid product_codes, resetting to default:", config.product_codes);
+            config.product_codes = DEFAULTS.product_codes;
+            needsSave = true;
+          }
+
+          if (!Array.isArray(config.countries) || !config.countries.every((country) => typeof country === "string")) {
+            console.warn("Invalid countries, resetting to default:", config.countries);
+            config.countries = DEFAULTS.countries;
+            needsSave = true;
+          }
+
+          if (typeof config.freeze_header !== "boolean") {
+            console.warn("Invalid freeze_header value:", config.freeze_header, "type:", typeof config.freeze_header);
+            config.freeze_header = DEFAULTS.freeze_header;
+            needsSave = true;
+          }
+
+          if (typeof config.parse_all_pages !== "boolean") {
+            console.warn("Invalid parse_all_pages value:", config.parse_all_pages);
+            config.parse_all_pages = DEFAULTS.parse_all_pages;
+            needsSave = true;
+          }
+
+          if (typeof config.username !== "string") {
+            console.warn("Invalid username, resetting to default:", config.username);
+            config.username = DEFAULTS.username;
+            needsSave = true;
+          }
+
+          if (typeof config.password !== "string") {
+            console.warn("Invalid password, resetting to default:", config.password);
+            config.password = DEFAULTS.password;
+            needsSave = true;
+          }
+
+          if (needsSave) {
+            const saveResult = await saveConfig(config);
+            if (!saveResult) {
+              console.error("Failed to save corrected config:", config);
+            } else {
+              console.log("Config corrected and saved successfully:", config);
+            }
+          }
+
+          document.getElementById("username").value = config.username || "";
+          document.getElementById("password").value = config.password || "";
+          document.getElementById("productCodes").value = Array.isArray(config.product_codes) ? config.product_codes.join(", ") : "";
+          document.getElementById("countries").value = Array.isArray(config.countries) ? config.countries.join(", ") : "";
+          document.getElementById("actionDelay").value = config.action_delay;
+          document.getElementById("pageTimeout").value = config.page_timeout;
+          document.getElementById("retryCount").value = config.retry_count;
+          document.getElementById("downloadTimeout").value = config.download_timeout;
+          document.getElementById("captchaTimeout").value = config.captcha_timeout;
+          document.getElementById("freezeHeader").value = Boolean(config.freeze_header).toString();
+          document.getElementById("parseAllPages").value = Boolean(config.parse_all_pages).toString();
+          document.getElementById("quantityUnit").value = config.quantity_unit;
+          document.getElementById("parseDepth").value = config.parse_depth;
+
+          document.querySelectorAll("input").forEach((input) => validateField(input, true));
+
+          if (data.status === "success") {
+            showNotification("Конфигурация успешно загружена", "success");
+          } else {
+            showNotification("Ошибка загрузки конфигурации", "error");
+          }
+        } catch (error) {
+          console.error("Config loading error:", error);
+          showNotification("Ошибка загрузки конфигурации", "error");
+        }
+      }
+
+      function startCaptchaCheck() {
+        console.log("Starting captcha check...");
+        if (captchaCheckInterval) {
+          clearInterval(captchaCheckInterval);
+        }
+
+        checkCaptchaStatus();
+
+        captchaCheckInterval = setInterval(checkCaptchaStatus, 6000);
+      }
+
+      function stopCaptchaCheck() {
+        console.log("Stopping captcha check...");
+        if (captchaCheckInterval) {
+          clearInterval(captchaCheckInterval);
+          captchaCheckInterval = null;
+        }
+      }
+
+      async function checkCaptchaStatus() {
+        try {
+          const response = await fetch("/api/bot/status");
+          const status = await response.json();
+
+          if (status.state !== "running") {
+            stopCaptchaCheck();
+            return;
+          }
+
+          const captchaResponse = await fetch("/api/bot/captcha-status");
+          const data = await captchaResponse.json();
+
+          console.log("Captcha check response:", data);
+
+          if (data.status === "waiting") {
+            showNotification(data.message || "Требуется ввод капчи! Откройте браузер и введите символы.", "warning");
+          }
+        } catch (error) {
+          console.error("Error checking captcha status:", error);
+        }
+      }
+
+      async function saveField(input) {
+        try {
+          const response = await fetch("/api/config");
+          const data = await response.json();
+          let config = data.status === "success" ? { ...data.config } : { ...DEFAULTS };
+
+          if (input.type === "checkbox") {
+            config.freeze_header = input.checked;
+          } else {
+            const isValid = validateField(input, true);
+            if (!isValid) {
+              const fieldName = FIELD_NAMES[input.id] || input.id;
+              console.warn(`Cannot save invalid value for field ${fieldName}:`, {
+                value: input.value,
+                rules: VALIDATION_RULES[input.id],
+              });
+              return;
+            }
+
+            const configKey = input.id.replace(/([A-Z])/g, "_$1").toLowerCase();
+            switch (input.id) {
+              case "freezeHeader":
+                config.freeze_header = input.value === "true";
+                break;
+              case "productCodes":
+              case "countries":
+                config[configKey] = input.value
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+                break;
+              case "actionDelay":
+                const delayValue = parseFloat(input.value);
+                config.action_delay = !isNaN(delayValue) ? delayValue : DEFAULTS.action_delay;
+                break;
+              case "pageTimeout":
+              case "retryCount":
+              case "downloadTimeout":
+              case "captchaTimeout":
+                const intValue = parseInt(input.value);
+                config[configKey] = !isNaN(intValue) ? intValue : DEFAULTS[configKey];
+                break;
+              case "parseAllPages":
+                config.parse_all_pages = input.value === "true";
+                break;
+              case "quantityUnit":
+                config.quantity_unit = input.value;
+                break;
+              case "parseDepth":
+                config.parse_depth = input.value;
+                break;
+              default:
+                config[configKey] = input.value;
+            }
+          }
+
+          const saveResponse = await saveConfig(config);
+          if (!saveResponse) {
+            console.error(`Failed to save field ${input.id}:`, config);
+          } else {
+            console.log(`Field ${input.id} saved successfully:`, config);
+          }
+        } catch (error) {
+          console.error(`Error saving field ${input.id}:`, error);
+        }
+      }
+
+      async function saveConfig(config) {
+        try {
+          console.log("Saving config:", config);
+          const response = await fetch("/api/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(config),
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            console.error("Server error:", data);
+            return false;
+          }
+
+          console.log("Config saved successfully:", data);
+          return data.status === "success";
+        } catch (error) {
+          console.error("Config save error:", error, "\nStack:", error.stack);
+          return false;
+        }
+      }
+
+      let notificationQueue = [];
+      let isShowingNotification = false;
+      let notificationsContainer;
+
+      function showNotification(message, type = "error") {
+        notificationQueue.push({ message, type });
+        if (!isShowingNotification) {
+          processNotificationQueue();
+        }
+      }
+
+      async function processNotificationQueue() {
+        if (notificationQueue.length === 0) {
+          isShowingNotification = false;
+          return;
+        }
+
+        isShowingNotification = true;
+        const { message, type } = notificationQueue.shift();
+
+        const notification = document.createElement("div");
+        notification.className = `notification ${type}`;
+
+        const messageText = document.createElement("span");
+        messageText.textContent = message;
+        notification.appendChild(messageText);
+
+        const closeBtn = document.createElement("span");
+        closeBtn.className = "close-btn";
+        notification.appendChild(closeBtn);
+
+        const progress = document.createElement("div");
+        progress.className = "progress";
+        const progressBar = document.createElement("div");
+        progressBar.className = "progress-bar";
+        progress.appendChild(progressBar);
+        notification.appendChild(progress);
+
+        document.body.appendChild(notification);
+
+        notification.offsetHeight;
+
+        notification.classList.add("show");
+
+        let hideTimeoutId = null;
+
+        const hideNotification = () => {
+          return new Promise((resolve) => {
+            notification.classList.add("hide");
+            notification.addEventListener(
+              "transitionend",
+              () => {
+                notification.remove();
+                resolve();
+              },
+              { once: true }
+            );
+          });
+        };
+
+        closeBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          if (hideTimeoutId) clearTimeout(hideTimeoutId);
+          await hideNotification();
+          processNotificationQueue();
+        });
+
+        notification.addEventListener("click", async (e) => {
+          if (!e.target.classList.contains("close-btn")) {
+            if (hideTimeoutId) clearTimeout(hideTimeoutId);
+            await hideNotification();
+            processNotificationQueue();
+          }
+        });
+
+        notification.addEventListener("mouseenter", () => {
+          if (hideTimeoutId) clearTimeout(hideTimeoutId);
+        });
+
+        notification.addEventListener("mouseleave", () => {
+          hideTimeoutId = setTimeout(async () => {
+            await hideNotification();
+            processNotificationQueue();
+          }, 3000);
+        });
+
+        hideTimeoutId = setTimeout(async () => {
+          await hideNotification();
+          processNotificationQueue();
+        }, 3000);
+      }
+
+      function setupValidation() {
+        document.querySelectorAll("input").forEach((input) => {
+          if (input.type === "checkbox") {
+            input.addEventListener("change", () => {
+              saveField(input);
+            });
+          } else {
+            input.addEventListener("input", () => {
+              const formGroup = input.closest(".form-group");
+              const isValid = validateField(input, true);
+
+              if (input.id === "username") {
+                formGroup.classList.toggle("error", !isValid);
+                input.classList.toggle("invalid", !isValid);
+              }
+            });
+
+            input.addEventListener("blur", () => {
+              const isValid = validateField(input, true);
+              if (isValid) {
+                saveField(input);
+              }
+            });
+
+            input.addEventListener("invalid", (e) => {
+              e.preventDefault();
+              const formGroup = input.closest(".form-group");
+              formGroup.classList.add("error");
+              input.classList.add("invalid");
+            });
+          }
+        });
+
+        document.querySelectorAll("input[type='number']").forEach((input) => {
+          input.addEventListener("change", () => {
+            const isValid = validateField(input, true);
+            if (isValid) {
+              saveField(input);
+            }
+          });
+
+          input.addEventListener("mouseup", () => {
+            const isValid = validateField(input, true);
+            if (isValid) {
+              saveField(input);
+            }
+          });
+
+          input.addEventListener("keyup", (e) => {
+            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+              const isValid = validateField(input, true);
+              if (isValid) {
+                saveField(input);
+              }
+            }
+          });
+        });
+
+        document.getElementById("freezeHeader").addEventListener("change", (e) => {
+          saveField(e.target);
+        });
+
+        document.getElementById("parseAllPages").addEventListener("change", (e) => {
+          saveField(e.target);
+        });
+
+        document.getElementById("quantityUnit").addEventListener("change", (e) => {
+          saveField(e.target);
+        });
+
+        document.getElementById("parseDepth").addEventListener("change", (e) => {
+          saveField(e.target);
+        });
+      }
+
+      async function startBot() {
+        try {
+          console.log("Starting bot...");
+          showNotification("Запуск бота...", "warning");
+
+          const startBtn = document.getElementById("start-btn");
+          startBtn.disabled = true;
+
+          const response = await fetch("/api/bot/start", { method: "POST" });
+          const data = await response.json();
+
+          console.debug("Start response:", data);
+
+          if (!response.ok) {
+            showNotification(data.message || "Ошибка запуска бота", "error");
+            return;
+          }
+
+          startCaptchaCheck();
+          showNotification(data.message, "success");
+          updateBotControls(true);
+          startStatusPolling(true);
+        } catch (error) {
+          console.error("Start request failed:", error);
+          showNotification("Ошибка запуска бота", "error");
+        } finally {
+          const startBtn = document.getElementById("start-btn");
+          startBtn.disabled = false;
+        }
+      }
+
+      async function stopBot() {
+        try {
+          console.log("Stopping bot...");
+          showNotification("Остановка бота...", "warning");
+
+          const stopBtn = document.getElementById("stop-btn");
+          stopBtn.disabled = true;
+
+          stopCaptchaCheck();
+
+          const response = await fetch("/api/bot/stop", { method: "POST" });
+          const data = await response.json();
+
+          if (!response.ok) {
+            showNotification(data.message || "Ошибка остановки", "error");
+            return;
+          }
+
+          showNotification(data.message, "success");
+          updateBotControls(false);
+          startStatusPolling(true);
+        } catch (error) {
+          console.error("Stop request failed:", error);
+          showNotification("Ошибка остановки бота", "error");
+        } finally {
+          const stopBtn = document.getElementById("stop-btn");
+          stopBtn.disabled = false;
+        }
+      }
+
+      function initErrorSlider() {
+        let isDragging = false;
+        const slider = document.querySelector(".clear-error-slider");
+        const thumb = document.querySelector(".slider-thumb");
+        const track = document.querySelector(".slider-track");
+        const clearText = document.querySelector(".clear-text");
+
+        const handleStart = (e) => {
+          isDragging = true;
+          slider.classList.add("active");
+          document.body.style.userSelect = "none";
+        };
+
+        const handleDrag = (e) => {
+          if (!isDragging) return;
+
+          const rect = slider.getBoundingClientRect();
+          let clientX = e.clientX || e.touches[0].clientX;
+          let newLeft = (clientX - rect.left - thumb.offsetWidth / 2) / rect.width;
+          newLeft = Math.min(Math.max(newLeft, 0), 0.95);
+
+          thumb.style.left = `${newLeft * 100}%`;
+          track.style.width = `${newLeft * 100}%`;
+
+          if (newLeft >= 0.8) {
+            handleClearErrors();
+            handleEnd();
+          }
+        };
+
+        const handleEnd = () => {
+          if (!isDragging) return;
+          isDragging = false;
+
+          thumb.style.transition = "left 0.3s ease";
+          track.style.transition = "width 0.3s ease";
+
+          thumb.style.left = "5px";
+          track.style.width = "0%";
+
+          setTimeout(() => {
+            thumb.style.transition = "";
+            track.style.transition = "";
+          }, 300);
+
+          slider.classList.remove("active", "success");
+          document.body.style.userSelect = "";
+        };
+
+        slider.addEventListener("mousedown", handleStart);
+        slider.addEventListener("touchstart", handleStart);
+        document.addEventListener("mouseup", handleEnd);
+        document.addEventListener("touchend", handleEnd);
+        document.addEventListener("mousemove", handleDrag);
+        document.addEventListener("touchmove", handleDrag);
+      }
+
+      function updateFormControls(disable) {
+        const inputs = document.querySelectorAll("#configForm input, #configForm select");
+        inputs.forEach((input) => {
+          input.disabled = disable;
+        });
+      }
+
+      async function handleClearErrors() {
+        try {
+          const slider = document.querySelector(".clear-error-slider");
+          slider.classList.add("success");
+
+          const response = await fetch("/api/bot/clear-errors", {
+            method: "POST",
+          });
+
+          if (response.ok) {
+            showNotification("Ошибки успешно очищены", "success");
+
+            const lastErrorElement = document.getElementById("last-error");
+            if (lastErrorElement) {
+              lastErrorElement.textContent = "нет";
+              lastErrorElement.style.color = "inherit";
+            }
+
+            startStatusPolling(true);
+          } else {
+            showNotification("Не удалось очистить ошибки", "error");
+          }
+        } catch (error) {
+          console.error("Error clearing errors:", error);
+          showNotification("Не удалось очистить ошибки", "error");
+        }
+      }
+
+      async function checkBotStatus() {
+        try {
+          const response = await fetch("/api/bot/status");
+          return await response.json();
+        } catch (error) {
+          console.error("Status check failed:", error);
+          return { state: "error" };
+        }
+      }
+
+      function initThemeSwitch() {
+        const themeToggle = document.getElementById("theme-toggle");
+
+        const savedTheme = localStorage.getItem("theme") || "light";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+        themeToggle.checked = savedTheme === "dark";
+
+        themeToggle.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            document.documentElement.setAttribute("data-theme", "dark");
+            localStorage.setItem("theme", "dark");
+          } else {
+            document.documentElement.setAttribute("data-theme", "light");
+            localStorage.setItem("theme", "light");
+          }
+        });
+      }
+
+      window.addEventListener("DOMContentLoaded", () => {
+        setupValidation();
+        loadAndValidateConfig();
+        initErrorSlider();
+        startStatusPolling(true);
+        initThemeSwitch();
+
+        if (!document.getElementById("bot-status")) {
+          const statusContainer = document.createElement("div");
+          statusContainer.id = "status-container";
+          statusContainer.innerHTML = `
+            <div id="bot-status" class="status-stopped">Статус: Неизвестен</div>
+            <div id="status-timestamp" class="status-timestamp"></div>
+        `;
+          document.body.appendChild(statusContainer);
+        }
+      });
+
+      window.addEventListener("beforeunload", () => {
+        if (captchaCheckInterval) {
+          clearInterval(captchaCheckInterval);
+        }
+        if (statusPollInterval) {
+          clearInterval(statusPollInterval);
+        }
+      });
+    </script>
+  </body>
+</html>
