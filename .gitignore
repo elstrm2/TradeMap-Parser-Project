@@ -8,3 +8,4 @@ ENV/
 .idea/
 .vscode/
 .github
+prepare_release.bat
