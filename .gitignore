@@ -7,3 +7,4 @@ venv/
 ENV/
 .idea/
 .vscode/
+.github
