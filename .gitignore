@@ -9,3 +9,4 @@ ENV/
 .vscode/
 .github
 prepare_release.bat
+release*
