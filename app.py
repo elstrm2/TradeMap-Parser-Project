@@ -17,7 +17,6 @@ from bot.core import setup_logging
 
 app_logger = setup_logging()
 
-
 from typing_extensions import Annotated
 from pydantic import BaseModel, Field
 
@@ -433,8 +432,15 @@ def check_captcha_status() -> Dict[str, str]:
 
 
 @app.route("/")
-def index() -> str:
-    return render_template("index.html")
+def index():
+    if getattr(sys, "frozen", False):
+        template_folder = os.path.join(sys._MEIPASS, "templates")
+        template_path = os.path.join(template_folder, "index.html")
+        with open(template_path, "r", encoding="utf-8") as f:
+            template_content = f.read()
+        return template_content
+    else:
+        return render_template("index.html")
 
 
 @app.route("/favicon.ico")

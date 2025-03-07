@@ -42,12 +42,7 @@ class ServerControlGUI:
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
-        icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
-        self.icon_image = (
-            Image.open(icon_path)
-            if os.path.exists(icon_path)
-            else Image.new("RGB", (32, 32), "blue")
-        )
+        self.icon_image = Image.new("RGB", (32, 32), "blue")
 
     def create_widgets(self) -> None:
         self.main_frame = ctk.CTkFrame(self.root)

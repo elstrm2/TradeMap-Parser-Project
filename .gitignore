@@ -10,3 +10,8 @@ ENV/
 .github
 prepare_release.bat
 release*
+app.spec
+build_app.bat
+logs
+build_gui_app.bat
+gui_app.spec
